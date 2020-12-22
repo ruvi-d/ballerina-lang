@@ -1,4 +1,4 @@
-/*
+                                  /*
  * Copyright (c) 2019, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  *
  * WSO2 Inc. licenses this file to you under the Apache License,
@@ -82,6 +82,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.io.*;
 
 import static io.ballerina.runtime.api.PredefinedTypes.TYPE_ANY;
 import static io.ballerina.runtime.api.PredefinedTypes.TYPE_ANYDATA;
@@ -120,6 +121,30 @@ import static io.ballerina.runtime.api.utils.TypeUtils.isValueType;
  */
 @SuppressWarnings({"rawtypes"})
 public class TypeChecker {
+ 
+    public static void outputToCSV(String[] dataLine) throws IOException {
+        File csvOutputFile = new File("typecheck_calls.csv");
+        if(!csvOutputFile.exists()){
+            csvOutputFile.createNewFile();
+        }
+        FileWriter fw = new FileWriter(csvOutputFile,true);
+        try (PrintWriter pw = new PrintWriter(fw)) {
+            pw.println(convertToCSV(dataLine));
+        }
+    }
+    
+    public static String convertToCSV(String[] data) {
+        return Stream.of(data).map(TypeChecker::escapeSpecialCharacters).collect(Collectors.joining(","));
+    }
+    
+    public static String escapeSpecialCharacters(String data) {
+        String escapedData = data.replaceAll("\\R", " ");
+        if (data.contains(",") || data.contains("\"") || data.contains("'")) {
+            data = data.replace("\"", "\"\"");
+            escapedData = "\"" + data + "\"";
+        }
+        return escapedData;
+    }
 
     public static Object checkCast(Object sourceVal, Type targetType) {
 
@@ -257,7 +282,18 @@ public class TypeChecker {
      * @return true if the value belongs to the given type, false otherwise
      */
     public static boolean checkIsType(Object sourceVal, Type targetType) {
-        return checkIsType(sourceVal, getType(sourceVal), targetType);
+        boolean retVal = false;
+        long startTime = System.nanoTime();
+        for (int i = 0; i < 10000; i++) {
+            retVal = checkIsType(sourceVal, getType(sourceVal), targetType);
+        }
+        long timeElapsed = System.nanoTime() - startTime;
+        try {
+            String[] dataLine = new String[] { String.valueOf(getType(sourceVal)), String.valueOf(targetType), String.valueOf(timeElapsed) };
+            outputToCSV(dataLine);
+        } catch (IOException e) {
+        }
+        return retVal;
     }
 
     /**
