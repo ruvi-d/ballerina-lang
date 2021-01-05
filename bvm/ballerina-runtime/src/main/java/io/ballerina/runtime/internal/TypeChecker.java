@@ -737,6 +737,9 @@ public class TypeChecker {
         //
         // where `Bar b = {i: 100};`, `b is Foo` should evaluate to true.
         if (sourceTypeTag != TypeTags.RECORD_TYPE_TAG && sourceTypeTag != TypeTags.OBJECT_TYPE_TAG) {
+            if (sourceType == targetType || sourceType.equals(targetType)) {
+                return true;
+            }
             return checkIsType(sourceType, targetType);
         }
 
